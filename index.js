@@ -12,23 +12,23 @@ const jetpack = require('fs-jetpack');
 module.exports = (options) => {
   const userDataDir = jetpack.cwd(app.getPath('userData'));
   const stateStoreFile = 'window-state.json';
+  let currentWindow;
 
   const config = Object.assign({
     file: 'window-state.json',
-    path: app.getPath('userData'),
-    maximize: true,
-    fullScreen: true
+    path: app.getPath('userData')
   }, options);
 
-  const state = userDataDir.read((options.fileName || stateStoreFile), 'json') || {
-    width: options.width || 800,
-    height: options.height || 800,
+  const state = userDataDir.read((config.file || stateStoreFile), 'json') || {
+    width: config.width || 800,
+    height: config.height || 800,
   };
 
-  const saveState = (win) => {
-    if (!win.isMaximized() && !win.isMinimized()) {
-      const position = win.getPosition();
-      const size = win.getSize();
+  const saveState = () => {
+    if (!currentWindow.isMaximized() && !currentWindow.isMinimized()) {
+      const position = currentWindow.getPosition();
+      const size = currentWindow.getSize();
+
       state.x = position[0];
       state.y = position[1];
       state.width = size[0];
@@ -40,15 +40,20 @@ module.exports = (options) => {
     });
   };
 
-  const savePath = (path) => {
-    state.path = path;
-    userDataDir.write(stateStoreFile, state, {
-      atomic: true
-    });
+  const removeListeners = () => {
+    currentWindow.removeListener('resize', saveState);
+    currentWindow.removeListener('move', saveState);
+    currentWindow.removeListener('close', removeListeners);
+    currentWindow.removeListener('closed', removeListeners);
   };
 
-  const manage = (browserWindow) => {
+  const start = (browserWindow) => {
+    currentWindow = browserWindow;
 
+    browserWindow.on('resize', saveState);
+    browserWindow.on('move', saveState);
+    browserWindow.on('close', removeListeners);
+    browserWindow.on('closed', removeListeners);
   };
 
   return {
@@ -64,13 +69,6 @@ module.exports = (options) => {
     get height() {
       return state.height;
     },
-    get isMaximized() {
-      return state.isMaximized;
-    },
-    get isFullScreen() {
-      return state.isFullScreen;
-    },
-    saveState,
-    savePath,
+    start,
   };
 };
