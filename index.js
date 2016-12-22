@@ -1,14 +1,6 @@
 const { app } = require('electron');
 const jetpack = require('fs-jetpack');
 
-/*
-  options {
-    fileName,
-    width,
-    height,
-  }
-*/
-
 module.exports = (options) => {
   const userDataDir = jetpack.cwd(app.getPath('userData'));
   const stateStoreFile = 'window-state.json';
@@ -16,7 +8,7 @@ module.exports = (options) => {
 
   const config = Object.assign({
     file: 'window-state.json',
-    path: app.getPath('userData')
+    path: app.getPath('userData'),
   }, options);
 
   const state = userDataDir.read((config.file || stateStoreFile), 'json') || {
@@ -36,7 +28,7 @@ module.exports = (options) => {
     }
 
     userDataDir.write(stateStoreFile, state, {
-      atomic: true
+      atomic: true,
     });
   };
 
